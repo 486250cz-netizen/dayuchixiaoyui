@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#03171e">
+  <meta name="description" content="深海吞噬——一款大鱼吃小鱼的海底生存进化游戏。吃掉更小的鱼，躲开更大的鱼，成为深海霸主。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23031b22'/%3E%3Cpath d='M38 18c10 0 17 6.3 17 14s-7 14-17 14c-6.8 0-12.3-3.1-15-7.3L9 47l4.7-15L9 17l14 8.3C25.7 21.1 31.2 18 38 18Z' fill='%2370f5d5'/%3E%3Ccircle cx='45' cy='28' r='2.4' fill='%23031b22'/%3E%3C/svg%3E">
+  <title>深海吞噬 · 大鱼吃小鱼</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app" data-mode="menu">
+    <canvas id="game" tabindex="0" aria-label="深海吞噬游戏画面"></canvas>
+    <div class="water-vignette" aria-hidden="true"></div>
+    <div class="surface-haze" aria-hidden="true"></div>
+
+    <!-- 游戏内信息 -->
+    <div class="hud" id="hud" aria-hidden="true">
+      <div class="hud-top">
+        <section class="level-card glass" aria-label="成长进度">
+          <div class="level-orb"><span>LV</span><strong id="levelNum">01</strong></div>
+          <div class="level-detail">
+            <div class="level-line">
+              <strong id="levelName">幼鱼</strong>
+              <span id="growthText">0 / 40</span>
+            </div>
+            <div class="growth-track" aria-hidden="true">
+              <div class="growth-fill" id="growthFill"></div>
+              <i class="growth-glint"></i>
+            </div>
+          </div>
+        </section>
+
+        <section class="score-card glass" aria-label="当前分数">
+          <span class="eyebrow">SCORE</span>
+          <strong id="score">000000</strong>
+          <span class="combo" id="combo">×2 连吃</span>
+        </section>
+
+        <section class="hud-tools" aria-label="状态与控制">
+          <div class="lives" id="lives" aria-label="剩余生命 3">
+            <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5S3.5 15.3 3.5 9.4A4.9 4.9 0 0 1 12 6a4.9 4.9 0 0 1 8.5 3.4c0 5.9-8.5 11.1-8.5 11.1Z"/></svg>
+            <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5S3.5 15.3 3.5 9.4A4.9 4.9 0 0 1 12 6a4.9 4.9 0 0 1 8.5 3.4c0 5.9-8.5 11.1-8.5 11.1Z"/></svg>
+            <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5S3.5 15.3 3.5 9.4A4.9 4.9 0 0 1 12 6a4.9 4.9 0 0 1 8.5 3.4c0 5.9-8.5 11.1-8.5 11.1Z"/></svg>
+          </div>
+          <button class="icon-btn" id="soundBtn" type="button" aria-label="关闭音效" title="音效 (M)">
+            <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.4 8.6a5 5 0 0 1 0 6.8"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/>
+            </svg>
+            <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 9h4l5-4v14l-5-4H4z"/><path d="m17 9 4 6m0-6-4 6"/>
+            </svg>
+          </button>
+          <button class="icon-btn" id="pauseBtn" type="button" aria-label="暂停游戏" title="暂停 (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
+          </button>
+        </section>
+      </div>
+    </div>
+
+    <button class="dash-btn" id="dashBtn" type="button" aria-label="冲刺（空格）">
+      <svg class="dash-progress" viewBox="0 0 64 64" aria-hidden="true">
+        <circle class="dash-track" cx="32" cy="32" r="28"></circle>
+        <circle class="dash-ring-fill" id="dashRing" cx="32" cy="32" r="28"></circle>
+      </svg>
+      <span class="dash-core">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 2.5 4.8 13h5.7l-.6 8.5L18.9 11h-5.7l.7-8.5Z" fill="currentColor"/></svg>
+      </span>
+      <span class="dash-label">冲刺<small>SPACE</small></span>
+    </button>
+
+    <div class="level-banner" id="levelBanner" role="status" aria-live="polite">
+      <span>EVOLUTION</span>
+      <strong id="bannerTitle">进化 · Lv.2 小鱼</strong>
+      <small id="bannerSub">体型提升，继续吞噬</small>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- 开始界面 -->
+    <section class="screen screen-menu is-active" id="menuScreen" aria-hidden="false" aria-label="游戏开始界面">
+      <div class="menu-content">
+        <div class="brand-mark">
+          <svg viewBox="0 0 42 26" aria-hidden="true">
+            <path d="M25.7 3.2c7 0 11.8 4.5 11.8 9.8s-4.8 9.8-11.8 9.8c-4.8 0-8.6-2.2-10.6-5.2L5 22.3l3.5-9.3L5 3.7l10.1 4.7C17.1 5.4 20.9 3.2 25.7 3.2Z" fill="currentColor" opacity=".92"/>
+            <circle cx="30.2" cy="10.2" r="1.7" fill="#062029"/>
+            <path d="M25.8 14.4c2.4 0 4.2-1.5 4.2-3.2" fill="none" stroke="#062029" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>
+          </svg>
+          <span>DEEP SEA · FOOD CHAIN</span>
+        </div>
+
+        <h1>大鱼<span class="eat">吃</span>小鱼</h1>
+        <p class="lede">从一尾幼鱼开始。吞下更小的鱼，躲开更大的影子，<br class="desktop-break">在深海的法则里，长成无人敢惹的霸主。</p>
+
+        <div class="menu-actions">
+          <button class="btn btn-primary" id="startBtn" type="button">
+            <span>开始捕食</span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
+          </button>
+          <div class="best-pill">
+            <span>最高分</span>
+            <strong id="bestScore">0</strong>
+          </div>
+        </div>
+
+        <div class="how-grid" aria-label="操作说明">
+          <div class="how-item">
+            <span class="how-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 3 14 9-6.1 1.4L10 20 5 3Z"/></svg>
+            </span>
+            <div><strong>游动</strong><small>鼠标 / WASD / 触屏拖拽</small></div>
+          </div>
+          <div class="how-item">
+            <span class="how-icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 2.5 4.8 13h5.7l-.6 8.5L18.9 11h-5.7l.7-8.5Z" fill="currentColor"/></svg>
+            </span>
+            <div><strong>冲刺</strong><small>空格 / 右下角按钮</small></div>
+          </div>
+          <div class="how-item">
+            <span class="how-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 4.5c4.2 0 7 2.7 7 6s-2.8 6-7 6c-2.9 0-5.1-1.3-6.3-3.1L3 18l2.1-5.6L3 6.8l6.3 3.1c1.2-1.8 3.4-3.1 6.2-3.1Z"/><circle cx="18.2" cy="8.8" r=".9" fill="currentColor"/></svg>
+            </span>
+            <div><strong>吞噬</strong><small>只吃体型比你小的鱼</small></div>
+          </div>
+        </div>
+
+        <p class="danger-note"><i></i> 红色光晕的巨鱼会吃掉你</p>
+      </div>
+
+      <aside class="menu-aside" aria-hidden="true">
+        <span><b>01</b> 吞噬</span>
+        <span><b>02</b> 进化</span>
+        <span><b>03</b> 称霸</span>
+      </aside>
+
+      <footer class="menu-footer">
+        <span>深海生态模拟</span>
+        <span class="menu-footer-line"></span>
+        <span>鼠标 / 触屏皆可游玩</span>
+      </footer>
+    </section>
+
+    <!-- 暂停界面 -->
+    <section class="screen screen-dim" id="pauseScreen" aria-hidden="true" aria-label="游戏暂停">
+      <div class="modal pause-modal">
+        <span class="kicker">PAUSED</span>
+        <h2>暂停一下</h2>
+        <p>深海不会等你太久。</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="resumeBtn" type="button"><span>继续捕食</span><span class="btn-arrow" aria-hidden="true">→</span></button>
+          <div class="button-row">
+            <button class="btn btn-ghost" id="restartPauseBtn" type="button">重新开始</button>
+            <button class="btn btn-quiet" id="menuPauseBtn" type="button">返回主菜单</button>
+          </div>
+        </div>
+        <div class="pause-hint"><kbd>ESC</kbd> 继续 <span></span> <kbd>M</kbd> 音效</div>
+      </div>
+    </section>
+
+    <!-- 结算界面 -->
+    <section class="screen screen-dim" id="endScreen" aria-hidden="true" aria-label="游戏结算">
+      <div class="modal end-modal">
+        <div class="end-symbol" id="endSymbol">✕</div>
+        <span class="kicker" id="endKicker">GAME OVER</span>
+        <h2 id="endTitle">被吞噬了</h2>
+        <p class="end-desc" id="endDesc">深海不讲情面，再来一次。</p>
+
+        <div class="final-score">
+          <span>本次得分</span>
+          <strong id="endScore">0</strong>
+          <em id="newRecord" hidden>新纪录</em>
+        </div>
+
+        <div class="result-grid">
+          <div><span>吞噬鱼群</span><strong id="endEaten">0</strong></div>
+          <div><span>最终体型</span><strong id="endSize">14 cm</strong></div>
+          <div><span>存活时间</span><strong id="endTime">00:00</strong></div>
+          <div><span>成长阶段</span><strong id="endLevel">Lv.1 幼鱼</strong></div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="replayBtn" type="button"><span>再玩一次</span><span class="btn-arrow" aria-hidden="true">↻</span></button>
+          <button class="btn btn-ghost" id="menuEndBtn" type="button">返回主菜单</button>
+        </div>
+        <p class="end-best">历史最高 <strong id="endBest">0</strong></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="game.js" defer></script>
+</body>
+</html>
